@@ -111,6 +111,10 @@ class WordleBot():
         for word in remove:
             self.word_bank.remove(word)
 
+        # Check if word bank is empty
+        if self.word_bank == []:
+            return 'E'
+
         return random.choice(self.word_bank)
 
     def check_yellows_against_word(self, yellows, guesses, word):
