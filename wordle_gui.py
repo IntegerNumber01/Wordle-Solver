@@ -15,10 +15,16 @@ WHITE = (216, 218, 220)
 def render_grid(x_cells, y_cells, cell_size, top_left_x, top_left_y):
     rectangles = []
 
-    for x in range(top_left_x, (x_cells * cell_size) + top_left_x, cell_size):
-        for y in range(top_left_y, (y_cells * cell_size) + top_left_y, cell_size):
+    for y in range(top_left_y, (y_cells * cell_size) + top_left_y, cell_size):
+        for x in range(top_left_x, (x_cells * cell_size) + top_left_x, cell_size):
             rect = pygame.Rect(x, y, cell_size, cell_size)
-            pygame.draw.rect(screen, WHITE, rect, 1)
+
+            # Bold row if its the current row
+            if row == (y - top_left_y) / cell_size:
+                pygame.draw.rect(screen, WHITE, rect, 2)
+            else:
+                pygame.draw.rect(screen, WHITE, rect, 1)
+
             rectangles.append(rect)
 
     return rectangles
@@ -165,9 +171,9 @@ y_cells = 6
 cell_size = 60
 grid_start_x, grid_start_y = 100, 100
 
-guessed_green_vals = []
-guessed_yellow_vals = []
-guessed_gray_vals = []
+guessed_green_vals = ['']
+guessed_yellow_vals = ['']
+guessed_gray_vals = ['']
 
 selected_greens = []
 selected_yellows = []
@@ -193,14 +199,26 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             key = pygame.key.name(event.key)
+            # print(key)
             if key == 'space':
                 pass
             elif key == 'return':
-                if row < 5:
+                # Don't allow return if the word is no 5 letters long
+                if len(entered_words[-1]) == 5 and row < 5:
                     row += 1
                     entered_words.append('')
             elif key == 'backspace':
                 entered_words[row] = entered_words[row][:-1]
+                if len(entered_words[row]) == 0 and row > 0:
+                    row -= 1
+                    entered_words.pop(-1)
+            elif key == 'up':
+                if row > 0:
+                    row -= 1
+            elif key == 'down':
+                # Don't allow going beneath the last row
+                if row < len(entered_words) - 1 and row < 5:
+                    row += 1
             elif not len(entered_words[row]) == 5:
                 entered_words[row] = entered_words[row] + key
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -249,9 +267,9 @@ while running:
 
                 status = None
 
-                guessed_green_vals = []
-                guessed_yellow_vals = []
-                guessed_gray_vals = []
+                guessed_green_vals = ['']
+                guessed_yellow_vals = ['']
+                guessed_gray_vals = ['']
 
                 entered_words = ['']
 
@@ -259,9 +277,8 @@ while running:
                 selected_yellows = []
 
                 row = 0
-
                 bot.reset()
-            elif refresh_button_rect.collidepoint(mouse):
+            elif refresh_button_rect.collidepoint(mouse) and not refresh_disabled:
                 green_selection = False
                 yellow_selection = False
                 color_eraser = False
@@ -275,14 +292,29 @@ while running:
                     refresh_disabled = True
                     status = "OUT OF WORDS"
                 else:
-                    entered_words.pop(-1)
-                    guessed_green_vals.pop(-1)
-                    guessed_yellow_vals.pop(-1)
-                    guessed_gray_vals.pop(-1)
+                    entered_words.pop(row)
+                    # guessed_green_vals.pop(-1)
+                    # guessed_yellow_vals.pop(-1)
+                    # guessed_gray_vals.pop(-1)
+                    # print('before change')
+                    # print(selected_greens)
+                    # print(selected_yellows)
+                    # print('?????????????????????')
+                    for i in range(len(selected_greens) - 1, -1, -1):
+                        if selected_greens[i][1] == grid_start_y + (cell_size * row):
+                            selected_greens.pop(i)
+                    for i in range(len(selected_yellows) - 1, -1, -1):
+                        if selected_yellows[i][1] == grid_start_y + (cell_size * row):
+                            selected_yellows.pop(i)
+
+                    # print('after change')
+                    # print(selected_greens)
+                    # print(selected_yellows)
+                    # print('?????????????????????')
 
                     guessed_green_vals, guessed_yellow_vals, guessed_gray_vals = calculate_color_place_val()
                     entered_words.append(bot_word)
-            elif guess_button_rect.collidepoint(mouse):
+            elif guess_button_rect.collidepoint(mouse) and not guess_disabled:
                 green_selection = False
                 yellow_selection = False
                 color_eraser = False
@@ -294,6 +326,9 @@ while running:
 
                 if not bot_word == "E" and len(entered_words) < 6:
                     entered_words.append(bot_word)
+                    guessed_green_vals.append('')
+                    guessed_yellow_vals.append('')
+                    guessed_gray_vals.append('')
                     row += 1
                 else:
                     guess_disabled = True
@@ -310,12 +345,12 @@ while running:
     render_grid(x_cells, y_cells, cell_size, grid_start_x, grid_start_y)
     render_buttons()
 
-    for row, text in enumerate(entered_words):
+    for r, text in enumerate(entered_words):
         for i, letter in enumerate(text):
             letter_width = letter_font.size(letter)[0]
             letter_height = letter_font.size(letter)[1]
             x = grid_start_x + ((cell_size - letter_width) / 2) + (cell_size * i)
-            y = grid_start_y + ((cell_size - letter_height) / 2) + (cell_size * row)
+            y = grid_start_y + ((cell_size - letter_height) / 2) + (cell_size * r)
             render_text(letter.upper(), x, y, letter_font, WHITE)
 
     if status is not None:
@@ -324,10 +359,11 @@ while running:
 
     pygame.display.flip()
 
-    # print(entered_words)
-    # print(guessed_green_vals)
-    # print(guessed_yellow_vals)
-    # print(guessed_gray_vals)
-    # print('?????????????????????')
+    print(entered_words)
+    print(guessed_green_vals)
+    print(guessed_yellow_vals)
+    print(guessed_gray_vals)
+    print('?????????????????????')
+
 
 pygame.quit()
