@@ -16,6 +16,7 @@ def render_grid(x_cells, y_cells, cell_size, top_left_x, top_left_y):
     rectangles = []
 
     for y in range(top_left_y, (y_cells * cell_size) + top_left_y, cell_size):
+        x_rectangles = []
         for x in range(top_left_x, (x_cells * cell_size) + top_left_x, cell_size):
             rect = pygame.Rect(x, y, cell_size, cell_size)
 
@@ -25,7 +26,9 @@ def render_grid(x_cells, y_cells, cell_size, top_left_x, top_left_y):
             else:
                 pygame.draw.rect(screen, WHITE, rect, 1)
 
-            rectangles.append(rect)
+            x_rectangles.append(rect)
+
+        rectangles.append(x_rectangles)
 
     return rectangles
 
@@ -39,8 +42,8 @@ def render_disabled_cover(x, y, width, height, r, g, b, a):
 def render_buttons():
     # Render clear color button
     clear_color_rect = pygame.Rect(410, 0, 30, 30)
-    pygame.draw.rect(screen, WHITE, clear_color_rect, 1)
-    pygame.draw.line(screen, WHITE, (410, 0), (440, 30))
+    pygame.draw.rect(screen, WHITE, clear_color_rect, 2)
+    pygame.draw.line(screen, WHITE, (410, 0), (438, 28), 3)  # End coordinate offset by 2x2 because of bleed
 
     # Render green button
     green_rect = pygame.Rect(440, 0, 30, 30)
@@ -72,6 +75,16 @@ def render_buttons():
     # REFRESH BUTTON
     if refresh_disabled:
         render_disabled_cover(100, 0, 44, 30, *GRAY, 220)
+
+    # Render selected color indicators
+    if green_selection:
+        pygame.draw.rect(screen, GREEN, (450, 35, 10, 5))
+
+    if yellow_selection:
+        pygame.draw.rect(screen, YELLOW, (480, 35, 10, 5))
+
+    if color_eraser:
+        pygame.draw.rect(screen, WHITE, (420, 35, 10, 5))
 
     return green_rect, yellow_rect, clear_color_rect, guess_button, refresh_button, clear_button
 
@@ -219,31 +232,33 @@ while running:
                 # Don't allow going beneath the last row
                 if row < len(entered_words) - 1 and row < 5:
                     row += 1
-            elif not len(entered_words[row]) == 5:
+            elif key.isalpha() and not len(entered_words[row]) == 5:
                 entered_words[row] = entered_words[row] + key
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse = event.pos
             clear_selectors = True
-            for rect in grid_rectangles:
-                if rect.collidepoint(mouse):
-                    if green_selection:
-                        selected_greens.append(rect.topleft)
+            print('row', row)
+            for i in range(0, row + 1):
+                for rect in grid_rectangles[i]:
+                    if rect.collidepoint(mouse):
+                        if green_selection:
+                            selected_greens.append(rect.topleft)
 
-                        # Remove the coord from yellow list if nessesary
-                        if rect.topleft in selected_yellows:
-                            selected_yellows.remove(rect.topleft)
-                    elif yellow_selection:
-                        selected_yellows.append(rect.topleft)
+                            # Remove the coord from yellow list if nessesary
+                            if rect.topleft in selected_yellows:
+                                selected_yellows.remove(rect.topleft)
+                        elif yellow_selection:
+                            selected_yellows.append(rect.topleft)
 
-                        # Remove the coord from green list if nessesary
-                        if rect.topleft in selected_greens:
-                            selected_greens.remove(rect.topleft)
-                    elif color_eraser:
-                        if rect.topleft in selected_greens:
-                            selected_greens.remove(rect.topleft)
-                        if rect.topleft in selected_yellows:
-                            selected_yellows.remove(rect.topleft)
-                    clear_selectors = False
+                            # Remove the coord from green list if nessesary
+                            if rect.topleft in selected_greens:
+                                selected_greens.remove(rect.topleft)
+                        elif color_eraser:
+                            if rect.topleft in selected_greens:
+                                selected_greens.remove(rect.topleft)
+                            if rect.topleft in selected_yellows:
+                                selected_yellows.remove(rect.topleft)
+                        clear_selectors = False
 
             if green_rect.collidepoint(mouse):
                 green_selection = True
@@ -359,11 +374,11 @@ while running:
 
     pygame.display.flip()
 
-    print(entered_words)
-    print(guessed_green_vals)
-    print(guessed_yellow_vals)
-    print(guessed_gray_vals)
-    print('?????????????????????')
+    # print(entered_words)
+    # print(guessed_green_vals)
+    # print(guessed_yellow_vals)
+    # print(guessed_gray_vals)
+    # print('?????????????????????')
 
 
 pygame.quit()
